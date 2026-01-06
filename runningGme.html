@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Mini Running Game</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+        }
+
+        canvas {
+            display: block;
+            margin: 0 auto;
+            background-color: #eee;
+            border: 2px solid #333;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="gameCanvas" width="400" height="500"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let player = {
+            x: 180,
+            y: 400,
+            width: 40,
+            height: 40,
+            color: 'blue',
+            dy: 0,
+            jumpForce: -12,
+            grounded: true
+        };
+
+        let obstacles = [];
+        let gameOver = false;
+        let score = 0;
+
+        function spawnObstacle() {
+            let size = 40;
+            let x = Math.random() * (canvas.width - size);
+            obstacles.push({ x, y: -size, width: size, height: size });
+        }
+
+        function drawPlayer() {
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawObstacles() {
+            ctx.fillStyle = 'red';
+            for (let obs of obstacles) {
+                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+            }
+        }
+
+        function moveObstacles() {
+            for (let obs of obstacles) {
+                obs.y += 4;
+            }
+            // Remove off-screen obstacles
+            obstacles = obstacles.filter(obs => obs.y < canvas.height);
+        }
+
+        function checkCollision() {
+            for (let obs of obstacles) {
+                if (
+                    player.x < obs.x + obs.width &&
+                    player.x + player.width > obs.x &&
+                    player.y < obs.y + obs.height &&
+                    player.y + player.height > obs.y
+                ) {
+                    gameOver = true;
+                }
+            }
+        }
+
+        function update() {
+            if (gameOver) {
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '30px Arial';
+                ctx.fillText('Game Over', 120, 250);
+                ctx.fillText('Score: ' + score, 140, 300);
+                return;
+            }
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Gravity
+            if (!player.grounded) {
+                player.dy += 0.8;
+            }
+
+            player.y += player.dy;
+
+            // Floor check
+            if (player.y + player.height >= 440) {
+                player.y = 440 - player.height;
+                player.dy = 0;
+                player.grounded = true;
+            }
+
+            drawPlayer();
+            drawObstacles();
+            moveObstacles();
+            checkCollision();
+
+            score++;
+            ctx.fillStyle = 'black';
+            ctx.font = '20px Arial';
+            ctx.fillText('Score: ' + score, 10, 30);
+
+            requestAnimationFrame(update);
+        }
+
+        // Controls
+        document.addEventListener('keydown', e => {
+            if (e.key === 'ArrowLeft' && player.x > 0) {
+                player.x -= 50;
+            } else if (e.key === 'ArrowRight' && player.x + player.width < canvas.width) {
+                player.x += 50;
+            } else if ((e.key === 'ArrowUp' || e.key === ' ') && player.grounded) {
+                player.dy = player.jumpForce;
+                player.grounded = false;
+            }
+        });
+
+        // Spawn obstacles
+        setInterval(spawnObstacle, 1500);
+
+        // Start game loop
+        update();
+
+    </script>
+</body>
+
+</html>
